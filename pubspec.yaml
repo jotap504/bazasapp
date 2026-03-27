@@ -1,0 +1,82 @@
+name: bazas
+description: La Podrida - App de seguimiento de partidas estilo Liga F1
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Supabase
+  supabase_flutter: ^2.5.0
+
+  # Estado global
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navegación
+  go_router: ^13.2.0
+
+  # Modelos / Serialización
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
+  # Imagen y cámara
+  image_picker: ^1.1.0
+  camera: ^0.10.5+9
+
+  # UI Components
+  fl_chart: ^0.67.0           # Gráficos (radar chart para perfil)
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0             # Loading skeletons
+  flutter_animate: ^4.5.0     # Micro-animaciones
+  lottie: ^3.1.0              # Animaciones Lottie
+
+  # Utilidades
+  intl: ^0.19.0
+  path: ^1.9.0
+  uuid: ^4.4.0
+  logger: ^2.3.0
+  flutter_dotenv: ^5.1.0     # Variables de entorno
+  url_launcher: ^6.2.5
+  share_plus: ^9.0.0
+  shared_preferences: ^2.2.3
+  google_generative_ai: ^0.4.6   # Llamar a Gemini AI directamente
+
+  # Fuentes
+  google_fonts: ^6.2.1
+
+  # Iconos
+  hugeicons: ^1.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Generadores de código
+  build_runner: ^2.4.9
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.4.0
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.10
+
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - .env
+    - assets/images/
+    - assets/animations/
+    - assets/icon/

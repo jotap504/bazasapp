@@ -1,0 +1,11 @@
+targets:
+  $default:
+    builders:
+      freezed:
+        options:
+          # Genera copyWith con == (recomendado)
+          copy_with: true
+      json_serializable:
+        options:
+          explicit_to_json: true
+          field_rename: none
