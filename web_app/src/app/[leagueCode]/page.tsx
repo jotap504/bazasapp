@@ -8,7 +8,7 @@ export default function LeagueDashboard({ params }: { params: Promise<{ leagueCo
   const { leagueCode } = use(params);
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ranking');
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export default function LeagueDashboard({ params }: { params: Promise<{ leagueCo
           .order('total_championship_points', { ascending: false });
 
         // Excluir al creator/admin usando created_by del mismo groupData
-        const adminUserId = (groupData as any).created_by;
+        const adminUserId = groupData.created_by;
         const filteredMembers = (memberData || []).filter((m: GroupMember) =>
           !adminUserId || m.user_id !== adminUserId
         );
@@ -78,8 +78,10 @@ export default function LeagueDashboard({ params }: { params: Promise<{ leagueCo
           .order('played_at', { ascending: false })
           .limit(20);
 
-        setMatches(matchData || []);
-      } catch (err) {
+        if (matchData) {
+          setMatches(matchData as Match[]);
+        }
+      } catch (err: unknown) {
         console.error(err);
       } finally {
         setLoading(false);
@@ -133,7 +135,7 @@ export default function LeagueDashboard({ params }: { params: Promise<{ leagueCo
             members={members}
             expandedMatch={expandedMatch}
             setExpandedMatch={setExpandedMatch}
-            createdBy={(group as any).created_by}
+            createdBy={group?.created_by}
           />
         )}
         {activeTab === 'hof' && <HallOfFameSection members={members} />}
@@ -158,14 +160,16 @@ function RankingTab({ members, group }: { members: GroupMember[], group: Group }
   );
 }
 
-function RankingColumn({ title, icon, color, members, valueKey, isPercent }: any) {
+function RankingColumn({ title, icon, color, members, valueKey, isPercent }: { 
+  title: string, icon: string, color: string, members: GroupMember[], valueKey: keyof GroupMember, isPercent?: boolean 
+}) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       <div className="flex-column flex-center m-b-16" style={{ gap: '4px' }}>
         <span style={{ fontSize: '20px' }}>{icon}</span>
         <span className="heading text-xs" style={{ color }}>{title}</span>
       </div>
-      {members.map((m: any, i: number) => (
+      {members.map((m: GroupMember, i: number) => (
         <div key={m.id} className="flex-column flex-center m-b-8">
           <div className="text-tiny heading" style={{ color: i === 0 ? 'var(--neon-orange)' : 'white' }}>
             {m.profile?.nickname || m.guest_nickname || 'Inv.'}
@@ -179,7 +183,7 @@ function RankingColumn({ title, icon, color, members, valueKey, isPercent }: any
   );
 }
 
-function getResultName(res: any, members: GroupMember[]): string {
+function getResultName(res: MatchResult, members: GroupMember[]): string {
   // 1. Si tiene perfil anidado (usuario registrado)
   if (res.profile?.nickname) return res.profile.nickname;
   if (res.profile?.display_name) return res.profile.display_name;
@@ -192,7 +196,7 @@ function getResultName(res: any, members: GroupMember[]): string {
 }
 
 function MatchesSection({ matches, members, expandedMatch, setExpandedMatch, createdBy }: {
-  matches: any[], members: GroupMember[], expandedMatch: string | null, setExpandedMatch: (id: string | null) => void, createdBy?: string
+  matches: Match[], members: GroupMember[], expandedMatch: string | null, setExpandedMatch: (id: string | null) => void, createdBy?: string
 }) {
   if (matches.length === 0) {
     return <div className="p-24 text-center text-muted">No hay partidas registradas aún.</div>;
@@ -205,8 +209,8 @@ function MatchesSection({ matches, members, expandedMatch, setExpandedMatch, cre
         const isExpanded = expandedMatch === match.id;
         // Filtrar al admin del desglose
         const results = (match.results || [])
-          .filter((r: any) => r.user_id !== createdBy)
-          .sort((a: any, b: any) => a.position_in_match - b.position_in_match);
+          .filter((r: MatchResult) => r.user_id !== createdBy)
+          .sort((a: MatchResult, b: MatchResult) => a.position_in_match - b.position_in_match);
 
         return (
           <div key={match.id} className="glass m-b-16" style={{ borderRadius: '16px', overflow: 'hidden' }}>
@@ -225,7 +229,7 @@ function MatchesSection({ matches, members, expandedMatch, setExpandedMatch, cre
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 {/* Top 3 resumen */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                  {results.slice(0, 3).map((r: any) => (
+                  {results.slice(0, 3).map((r: MatchResult) => (
                     <div key={r.id} className="text-tiny" style={{ color: r.position_in_match === 1 ? 'var(--neon-orange)' : 'var(--text-secondary)' }}>
                       {r.position_in_match}º {getResultName(r, members)}
                     </div>
@@ -248,7 +252,7 @@ function MatchesSection({ matches, members, expandedMatch, setExpandedMatch, cre
                     </tr>
                   </thead>
                   <tbody>
-                    {results.map((r: any) => {
+                    {results.map((r: MatchResult) => {
                       const name = getResultName(r, members);
                       const isWinner = r.position_in_match === 1;
                       const champPts = Math.round(r.earned_championship_points || 0);

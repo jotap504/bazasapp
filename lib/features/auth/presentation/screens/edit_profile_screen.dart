@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:bazas/core/theme/app_theme.dart';
 import 'package:bazas/features/auth/data/repositories/auth_repository.dart';
-import 'package:bazas/features/auth/data/models/profile_model.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key, required this.userId});

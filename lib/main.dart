@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/utils/debug_logger.dart';
 import 'core/widgets/debug_console_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/services/preferences_service.dart';

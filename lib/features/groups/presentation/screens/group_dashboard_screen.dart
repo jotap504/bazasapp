@@ -140,8 +140,8 @@ class GroupDashboardScreen extends ConsumerWidget {
 
                           // LISTA 🎯 EFECTIVIDAD
                           // Obtenemos el grupo para saber la asistencia mínima
-                          final totalLeagueMatches = group?.matchCount ?? 0;
-                          final minReq = totalLeagueMatches * ((group?.minAttendancePct ?? 50) / 100.0);
+                          final totalLeagueMatches = group.matchCount ?? 0;
+                          final minReq = totalLeagueMatches * ((group.minAttendancePct ?? 50) / 100.0);
 
                           final qualifiedEff = members.where((m) => m.totalMatchesPlayed >= minReq).toList();
                           qualifiedEff.sort((a, b) => b.effectiveAvgPercent.compareTo(a.effectiveAvgPercent));
@@ -167,9 +167,9 @@ class GroupDashboardScreen extends ConsumerWidget {
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(color: Colors.white10),
                                   ),
-                                  child: Row(
+                                  child: const Row(
                                     children: [
-                                      const SizedBox(width: 40, child: Text('POS', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted))),
+                                      SizedBox(width: 40, child: Text('POS', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted))),
                                       Expanded(child: _TripleHeaderCell(icon: HugeIcons.strokeRoundedChampion, label: 'PUNTOS', color: AppColors.neonCyan)),
                                       Expanded(child: _TripleHeaderCell(icon: HugeIcons.strokeRoundedTarget02, label: 'EFECT.', color: AppColors.neonGreen)),
                                       Expanded(child: _TripleHeaderCell(icon: HugeIcons.strokeRoundedZap, label: 'OSADÍA', color: AppColors.neonOrange)),
@@ -188,7 +188,7 @@ class GroupDashboardScreen extends ConsumerWidget {
                                       final oMem = index < osadiaList.length ? osadiaList[index] : null;
 
                                       bool isEQualified = true;
-                                      if (eMem != null && group != null) {
+                                      if (eMem != null) {
                                         isEQualified = eMem.totalMatchesPlayed >= minReq;
                                       }
 

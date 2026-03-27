@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -11,7 +10,6 @@ import 'package:bazas/features/groups/data/repositories/groups_repository.dart';
 import 'package:bazas/features/matches/data/repositories/matches_repository.dart';
 import 'package:bazas/features/auth/data/repositories/auth_repository.dart';
 
-import 'package:bazas/core/utils/debug_logger.dart';
 
 part 'scan_controller.freezed.dart';
 part 'scan_controller.g.dart';
@@ -98,7 +96,7 @@ class ScanController extends _$ScanController {
         // Buscar el miembro cuyo nombre coincida mejor
         final matchingMember = members.firstWhere(
           (m) {
-            final displayName = m.profile?.displayName?.toLowerCase().trim() ?? '';
+            final displayName = m.profile?.displayName.toLowerCase().trim() ?? '';
             final guestName = m.guestFullName?.toLowerCase().trim() ?? '';
             final aiName = p.playerName.toLowerCase().trim();
             return displayName == aiName || guestName == aiName;

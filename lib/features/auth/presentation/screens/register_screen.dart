@@ -96,7 +96,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     autofillHints: const [AutofillHints.name],
                     decoration: const InputDecoration(
                       labelText: 'NOMBRE PÚBLICO / JUGADOR',
-                      prefixIcon: const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.white, size: 20),
+                      prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.white, size: 20),
                       hintText: 'Ej: Jugador_01',
                     ),
                     validator: (v) =>
@@ -111,7 +111,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       labelText: 'EMAIL',
-                      prefixIcon: const HugeIcon(icon: HugeIcons.strokeRoundedMail01, color: Colors.white, size: 20),
+                      prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedMail01, color: Colors.white, size: 20),
                     ),
                     validator: (v) =>
                         (v == null || !v.contains('@')) ? 'Email inválido' : null,
@@ -125,7 +125,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'PASSWORD',
-                      prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedLock, color: Colors.white, size: 20),
+                      prefixIcon: const HugeIcon(icon: HugeIcons.strokeRoundedLock, color: Colors.white, size: 20),
                       suffixIcon: IconButton(
                         onPressed: () =>
                             setState(() => _obscurePassword = !_obscurePassword),

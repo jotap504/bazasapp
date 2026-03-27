@@ -35,7 +35,7 @@ class PointsDetailDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _detailRow('Posición ${position}º', '${championshipPoints.toInt()} pts'),
+          _detailRow('Posición $positionº', '${championshipPoints.toInt()} pts'),
           if (useOsadia) ...[
             const SizedBox(height: 8),
             _detailRow('Osadía (Bazas ganadas * $osadiaMultiplier)', '${osadiaPoints.toInt()} pts'),

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,7 +22,6 @@ import 'package:bazas/features/scan/presentation/screens/scan_verify_screen.dart
 import 'package:bazas/features/scan/presentation/screens/scan_confirm_screen.dart';
 import 'package:bazas/features/scan/presentation/screens/manual_registration_screen.dart';
 
-import 'package:bazas/core/theme/app_theme.dart';
 
 part 'app_router.g.dart';
 

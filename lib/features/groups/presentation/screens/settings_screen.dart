@@ -25,10 +25,10 @@ class SettingsScreen extends ConsumerWidget {
             if (user != null)
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                leading: CircleAvatar(
+                leading: const CircleAvatar(
                   radius: 30,
                   backgroundColor: AppColors.surfaceElevated,
-                  child: const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.white, size: 30),
+                  child: HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.white, size: 30),
                 ),
                 title: Text(user.email ?? 'Invitado', style: AppTextStyles.inter(fontWeight: FontWeight.bold)),
                 subtitle: const Text('JUGADOR ACTIVO'),
@@ -72,12 +72,12 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // SECCIONES
-            _SettingsTile(
+            const _SettingsTile(
               icon: HugeIcons.strokeRoundedNotification01,
               title: 'NOTIFICACIONES',
               subtitle: 'Alertas de nuevas partidas y ranking',
             ),
-            _SettingsTile(
+            const _SettingsTile(
               icon: HugeIcons.strokeRoundedSecurity,
               title: 'PRIVACIDAD',
               subtitle: 'Gestión de datos y visibilidad',

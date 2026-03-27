@@ -244,7 +244,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       ),
                     ],
                   ),
-                  Text(
+                  const Text(
                     'Añade a tus amigos para que la IA los reconozca. No necesitan cuenta de app.',
                     style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),

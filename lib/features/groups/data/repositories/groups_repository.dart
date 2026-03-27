@@ -265,7 +265,7 @@ class GroupsRepository {
         .eq('group_id', groupId)
         .order('total_championship_points', ascending: false)
         .map((rows) => rows
-            .map((e) => GroupMemberModel.fromJson(e as Map<String, dynamic>))
+            .map((e) => GroupMemberModel.fromJson(e))
             .toList());
   }
 }

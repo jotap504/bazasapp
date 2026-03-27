@@ -5,12 +5,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:bazas/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide User;
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-import 'package:supabase_flutter/supabase_flutter.dart' show Session, AuthResponse, AuthState, User;
 import 'package:bazas/core/router/app_router.dart';
 import 'package:bazas/features/auth/data/repositories/auth_repository.dart';
-import 'package:bazas/core/providers/supabase_client_provider.dart';
 import 'package:bazas/core/utils/debug_logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -118,7 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'PASSWORD',
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedLock, color: Colors.white, size: 20),
+                        prefixIcon: const HugeIcon(icon: HugeIcons.strokeRoundedLock, color: Colors.white, size: 20),
                         suffixIcon: IconButton(
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                           icon: HugeIcon(
