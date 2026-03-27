@@ -1001,7 +1001,7 @@ class _HallOfFameSection extends StatelessWidget {
         _HofTile(
           title: 'EL CHAMULLERO',
           subtitle: 'Vive del aire (pide y no gana)',
-          icon: HugeIcons.strokeRoundedCloud01,
+          icon: HugeIcons.strokeRoundedAiBrain01,
           color: Colors.blueGrey.shade300,
           winners: mostChamullero,
           stat: '$maxChamullero bazas',
