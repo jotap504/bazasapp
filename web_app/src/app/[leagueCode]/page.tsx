@@ -543,6 +543,62 @@ function TriviaSection({ members, matches }: { members: GroupMember[], matches: 
   const sortedOsadia = [...members].sort((a, b) => b.total_osadia_points - a.total_osadia_points);
   const topOsadia = sortedOsadia.length > 0 && sortedOsadia[0].total_osadia_points > 0 ? sortedOsadia[0] : null;
 
+  // 4. EL MURO DE PIEDRA (Mayor regularidad - menor promedio de posición)
+  const playerPositions: Record<string, number[]> = {};
+  for (const m of matches) {
+    for (const r of m.results || []) {
+      const target = (r.user_id ? memberMap[r.user_id] : null) || (r.guest_member_id ? memberMap[r.guest_member_id] : null);
+      if (target) {
+        if (!playerPositions[target.id]) playerPositions[target.id] = [];
+        playerPositions[target.id].push(r.position_in_match);
+      }
+    }
+  }
+
+  let regularPlayer: GroupMember | null = null;
+  let minAvgPos = 99.0;
+  Object.entries(playerPositions).forEach(([mId, posList]) => {
+    if (posList.length >= 2) {
+      const avg = posList.reduce((a, b) => a + b, 0) / posList.length;
+      if (avg < minAvgPos) {
+        minAvgPos = avg;
+        regularPlayer = memberMap[mId] || null;
+      }
+    }
+  });
+
+  // 5. EL FAROL ROJO (Más veces en el último puesto)
+  const lastCounts: Record<string, number> = {};
+  for (const m of matches) {
+    const totalPlayersInMatch = (m.results || []).length;
+    for (const r of m.results || []) {
+      if (r.position_in_match === totalPlayersInMatch && totalPlayersInMatch > 0) {
+        const target = (r.user_id ? memberMap[r.user_id] : null) || (r.guest_member_id ? memberMap[r.guest_member_id] : null);
+        if (target) {
+          lastCounts[target.id] = (lastCounts[target.id] || 0) + 1;
+        }
+      }
+    }
+  }
+  const maxLast = Math.max(...Object.values(lastCounts), 0);
+  const worstPlayers = members.filter(m => lastCounts[m.id] === maxLast && maxLast > 0);
+
+  // 6. ZONA DE DESCENSO (Más veces en los últimos 3 puestos)
+  const bottom3Counts: Record<string, number> = {};
+  for (const m of matches) {
+    const totalPlayersInMatch = (m.results || []).length;
+    for (const r of m.results || []) {
+      if (r.position_in_match > totalPlayersInMatch - 3 && totalPlayersInMatch >= 3) {
+        const target = (r.user_id ? memberMap[r.user_id] : null) || (r.guest_member_id ? memberMap[r.guest_member_id] : null);
+        if (target) {
+          bottom3Counts[target.id] = (bottom3Counts[target.id] || 0) + 1;
+        }
+      }
+    }
+  }
+  const maxBottom3 = Math.max(...Object.values(bottom3Counts), 0);
+  const bottom3Players = members.filter(m => bottom3Counts[m.id] === maxBottom3 && maxBottom3 > 0);
+
   return (
     <div className="flex-column">
       <div className="text-center text-xs heading text-muted m-b-16" style={{ letterSpacing: '2px' }}>
@@ -579,6 +635,39 @@ function TriviaSection({ members, matches }: { members: GroupMember[], matches: 
           subtitle="Máximo puntaje acumulado apostando y arriesgando bazas"
           highlight={`${Math.round(topOsadia.total_osadia_points)} pts`}
           color="var(--neon-green)"
+        />
+      )}
+
+      {regularPlayer && (
+        <TriviaCard
+          icon="🧱"
+          title="EL MURO DE PIEDRA (REGULARIDAD)"
+          names={getMemberDisplayName(regularPlayer)}
+          subtitle="Promedio de puesto más sólido a lo largo de las fechas disputadas"
+          highlight={`Puesto #${minAvgPos.toFixed(1)}`}
+          color="#00f5d4"
+        />
+      )}
+
+      {worstPlayers.length > 0 && (
+        <TriviaCard
+          icon="🔴"
+          title="EL FAROL ROJO"
+          names={worstPlayers.map(getMemberDisplayName).join(', ')}
+          subtitle="Jugador que más veces terminó en la última posición de una partida"
+          highlight={`${maxLast} veces último`}
+          color="#ff3366"
+        />
+      )}
+
+      {bottom3Players.length > 0 && (
+        <TriviaCard
+          icon="🔻"
+          title="ZONA DE DESCENSO"
+          names={bottom3Players.map(getMemberDisplayName).join(', ')}
+          subtitle="Jugadores con más apariciones en los últimos 3 puestos"
+          highlight={`${maxBottom3} veces en el fondo`}
+          color="#ff9900"
         />
       )}
     </div>

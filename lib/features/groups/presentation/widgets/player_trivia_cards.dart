@@ -225,7 +225,7 @@ class PlayerTriviaCards extends StatelessWidget {
     double minAvgPos = 99.0;
 
     playerPositions.forEach((mId, posList) {
-      if (posList.length >= 5) {
+      if (posList.length >= 2) {
         final avg = posList.reduce((a, b) => a + b) / posList.length.toDouble();
         if (avg < minAvgPos) {
           minAvgPos = avg;
@@ -245,7 +245,63 @@ class PlayerTriviaCards extends StatelessWidget {
       ));
     }
 
-    // 6. ⚔️ LA FECHA MÁS REÑIDA (Partida con menor diferencia entre 1º y último puesto)
+    // 6. 🔴 EL FAROL ROJO (Más veces en el último puesto)
+    final Map<String, int> lastCounts = {};
+    for (final results in matchResultsMap.values) {
+      final totalPlayersInMatch = results.length;
+      for (final r in results) {
+        if (r.positionInMatch == totalPlayersInMatch) {
+          final target = (r.userId != null ? memberMap[r.userId] : null) ?? memberMap[r.guestMemberId];
+          if (target != null) {
+            lastCounts[target.id] = (lastCounts[target.id] ?? 0) + 1;
+          }
+        }
+      }
+    }
+    if (lastCounts.isNotEmpty) {
+      final maxLast = lastCounts.values.reduce((a, b) => a > b ? a : b);
+      final worstPlayers = activeMembers.where((m) => lastCounts[m.id] == maxLast).toList();
+      if (worstPlayers.isNotEmpty && maxLast > 0) {
+        list.add(_TriviaData(
+          title: 'EL FAROL ROJO',
+          subtitle: 'Jugador que más veces terminó en la última posición de una partida',
+          players: worstPlayers.map((w) => w.displayName).toList(),
+          highlightValue: '$maxLast veces último',
+          icon: HugeIcons.strokeRoundedAlertCircle,
+          color: Colors.redAccent,
+        ));
+      }
+    }
+
+    // 7. 🔻 ZONA DE DESCENSO (Más veces en los últimos 3 puestos)
+    final Map<String, int> bottom3Counts = {};
+    for (final results in matchResultsMap.values) {
+      final totalPlayersInMatch = results.length;
+      for (final r in results) {
+        if (r.positionInMatch > totalPlayersInMatch - 3) {
+          final target = (r.userId != null ? memberMap[r.userId] : null) ?? memberMap[r.guestMemberId];
+          if (target != null) {
+            bottom3Counts[target.id] = (bottom3Counts[target.id] ?? 0) + 1;
+          }
+        }
+      }
+    }
+    if (bottom3Counts.isNotEmpty) {
+      final maxBottom3 = bottom3Counts.values.reduce((a, b) => a > b ? a : b);
+      final bottom3Players = activeMembers.where((m) => bottom3Counts[m.id] == maxBottom3).toList();
+      if (bottom3Players.isNotEmpty && maxBottom3 > 0) {
+        list.add(_TriviaData(
+          title: 'ZONA DE DESCENSO',
+          subtitle: 'Jugador con más caídas en los últimos 3 puestos de las partidas',
+          players: bottom3Players.map((w) => w.displayName).toList(),
+          highlightValue: '$maxBottom3 veces en el fondo',
+          icon: HugeIcons.strokeRoundedArrowDown01,
+          color: Colors.orangeAccent,
+        ));
+      }
+    }
+
+    // 8. ⚔️ LA FECHA MÁS REÑIDA (Partida con menor diferencia entre 1º y último puesto)
     double minGap = 999.0;
     MatchModel? closestMatch;
 
