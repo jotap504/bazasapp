@@ -19,6 +19,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:bazas/features/scan/presentation/controllers/scan_controller.dart';
 import 'package:bazas/features/groups/presentation/widgets/group_statistics_tab.dart';
+import 'package:bazas/features/groups/presentation/widgets/player_history_sheet.dart';
 
 class GroupDashboardScreen extends ConsumerWidget {
   const GroupDashboardScreen({super.key, required this.groupId});
@@ -194,12 +195,27 @@ class GroupDashboardScreen extends ConsumerWidget {
                                         isEQualified = eMem.totalMatchesPlayed >= minReq;
                                       }
 
+                                      // Obtener partidas y resultados del provider para abrir el historial del jugador
+                                      final matchesAsync = ref.watch(groupMatchesProvider(groupId));
+                                      final matchesList = matchesAsync.maybeWhen(data: (m) => m, orElse: () => <MatchModel>[]);
+
+                                      void openHistory(GroupMemberModel? m) {
+                                        if (m == null) return;
+                                        PlayerHistorySheet.show(
+                                          context,
+                                          member: m,
+                                          matches: matchesList,
+                                          matchResultsMap: const {},
+                                        );
+                                      }
+
                                       return _TripleRankingRow(
                                         pos: index + 1,
                                         pMember: pMem,
                                         eMember: eMem,
                                         isEQualified: isEQualified,
                                         oMember: oMem,
+                                        onTap: openHistory,
                                       );
                                     },
                                     childCount: members.length,
@@ -627,6 +643,7 @@ class _TripleRankingRow extends StatelessWidget {
     this.eMember,
     required this.isEQualified,
     this.oMember,
+    this.onTap,
   });
 
   final int pos;
@@ -634,6 +651,7 @@ class _TripleRankingRow extends StatelessWidget {
   final GroupMemberModel? eMember;
   final bool isEQualified;
   final GroupMemberModel? oMember;
+  final void Function(GroupMemberModel?)? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -660,7 +678,7 @@ class _TripleRankingRow extends StatelessWidget {
           ),
 
           // PUNTOS
-          Expanded(child: _RankCell(member: pMember, value: '${pMember?.totalChampionshipPoints.toInt() ?? 0}', color: AppColors.neonCyan)),
+          Expanded(child: _RankCell(member: pMember, value: '${pMember?.totalChampionshipPoints.toInt() ?? 0}', color: AppColors.neonCyan, onTap: onTap)),
           
           // EFECTIVIDAD
           Expanded(
@@ -669,11 +687,12 @@ class _TripleRankingRow extends StatelessWidget {
               value: isEQualified ? '${eMember?.effectiveAvgPercent.toInt() ?? 0}%' : '-', 
               color: isEQualified ? AppColors.neonGreen : AppColors.textMuted,
               isQualified: isEQualified,
+              onTap: onTap,
             ),
           ),
 
           // OSADIA
-          Expanded(child: _RankCell(member: oMember, value: '${oMember?.totalOsadiaPoints.toInt() ?? 0}', color: AppColors.neonOrange)),
+          Expanded(child: _RankCell(member: oMember, value: '${oMember?.totalOsadiaPoints.toInt() ?? 0}', color: AppColors.neonOrange, onTap: onTap)),
         ],
       ),
     );
@@ -681,11 +700,12 @@ class _TripleRankingRow extends StatelessWidget {
 }
 
 class _RankCell extends StatelessWidget {
-  const _RankCell({this.member, required this.value, required this.color, this.isQualified = true});
+  const _RankCell({this.member, required this.value, required this.color, this.isQualified = true, this.onTap});
   final GroupMemberModel? member;
   final String value;
   final Color color;
   final bool isQualified;
+  final void Function(GroupMemberModel?)? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -693,29 +713,34 @@ class _RankCell extends StatelessWidget {
     
     final name = member!.profile?.nickname ?? member!.profile?.displayName ?? member!.guestNickname ?? member!.guestFullName?.split(' ').first ?? 'Inv.';
 
-    return Column(
-      children: [
-        Text(
-          name,
-          style: AppTextStyles.inter(
-            fontSize: 13, 
-            fontWeight: isQualified ? FontWeight.bold : FontWeight.normal,
-            color: isQualified ? Colors.white : Colors.white38,
+    return GestureDetector(
+      onTap: onTap != null ? () => onTap!(member) : null,
+      child: Column(
+        children: [
+          Text(
+            name,
+            style: AppTextStyles.inter(
+              fontSize: 13, 
+              fontWeight: isQualified ? FontWeight.bold : FontWeight.normal,
+              color: isQualified ? Colors.white : Colors.white38,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-        ),
-        Text(
-          value,
-          style: AppTextStyles.rajdhani(
-            fontSize: 11, 
-            fontWeight: FontWeight.bold,
-            color: color.withOpacity(isQualified ? 0.8 : 0.4),
+          Text(
+            value,
+            style: AppTextStyles.rajdhani(
+              fontSize: 11, 
+              fontWeight: FontWeight.bold,
+              color: color.withOpacity(isQualified ? 0.8 : 0.4),
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          if (onTap != null)
+            const Icon(Icons.touch_app, size: 10, color: AppColors.textMuted),
+        ],
+      ),
     );
   }
 }

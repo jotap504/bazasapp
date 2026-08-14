@@ -12,6 +12,7 @@ export default function LeagueDashboard({ params }: { params: Promise<{ leagueCo
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ranking');
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
+  const [selectedMember, setSelectedMember] = useState<GroupMember | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -131,7 +132,7 @@ export default function LeagueDashboard({ params }: { params: Promise<{ leagueCo
       </div>
 
       <section>
-        {activeTab === 'ranking' && <RankingTab members={members} group={group} />}
+        {activeTab === 'ranking' && <RankingTab members={members} group={group} onSelectMember={setSelectedMember} />}
         {activeTab === 'partidas' && (
           <MatchesSection
             matches={matchesDesc}
@@ -139,11 +140,22 @@ export default function LeagueDashboard({ params }: { params: Promise<{ leagueCo
             expandedMatch={expandedMatch}
             setExpandedMatch={setExpandedMatch}
             createdBy={group?.created_by}
+            onSelectMember={setSelectedMember}
           />
         )}
-        {activeTab === 'stats' && <StatisticsSection members={members} matches={matches} createdBy={group?.created_by} />}
-        {activeTab === 'hof' && <HallOfFameSection members={members} />}
+        {activeTab === 'stats' && <StatisticsSection members={members} matches={matches} createdBy={group?.created_by} onSelectMember={setSelectedMember} />}
+        {activeTab === 'hof' && <HallOfFameSection members={members} onSelectMember={setSelectedMember} />}
       </section>
+
+      {/* MODAL FICHA DE JUGADOR */}
+      {selectedMember && (
+        <PlayerDetailModal
+          member={selectedMember}
+          matches={matches}
+          members={members}
+          onClose={() => setSelectedMember(null)}
+        />
+      )}
     </div>
   );
 }
@@ -167,8 +179,117 @@ function getResultName(res: MatchResult, members: GroupMember[]): string {
   return 'Jugador';
 }
 
+// ── MODAL DINÁMICO DE JUGADOR CON HISTORIAL Y BAZAS ACERTADAS/FALLADAS ──
+function PlayerDetailModal({ member, matches, members, onClose }: {
+  member: GroupMember; matches: Match[]; members: GroupMember[]; onClose: () => void;
+}) {
+  const name = getMemberDisplayName(member);
+
+  const history: { match: Match; result: MatchResult; exact: number; failed: number }[] = [];
+  let totalExact = 0;
+  let totalFailed = 0;
+  let totalPodiums = 0;
+
+  const sortedMatches = [...matches].sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime());
+
+  for (const match of sortedMatches) {
+    for (const res of match.results || []) {
+      const matchesUser = (res.user_id && member.user_id && res.user_id === member.user_id);
+      const matchesGuest = (res.guest_member_id && res.guest_member_id === member.id);
+
+      if (matchesUser || matchesGuest) {
+        const exact = res.exact_predictions || 0;
+        const rounds = res.total_match_rounds || 10;
+        const failed = Math.max(0, rounds - exact);
+
+        totalExact += exact;
+        totalFailed += failed;
+        if (res.position_in_match <= 3) totalPodiums++;
+
+        history.push({ match, result: res, exact, failed });
+      }
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)',
+      backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+    }} onClick={onClose}>
+      <div className="glass p-24" style={{
+        maxWidth: '520px', width: '100%', maxHeight: '85vh', overflowY: 'auto', borderRadius: '24px',
+        border: '1px solid var(--neon-cyan)', background: 'var(--surface-elevated)'
+      }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex-between m-b-16">
+          <div>
+            <h2 className="neon-text-cyan heading-medium">{name}</h2>
+            <p className="text-muted text-tiny" style={{ letterSpacing: '1px' }}>DESGLOSE DE PARTIDAS Y RENDIMIENTO</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', fontSize: '24px', cursor: 'pointer' }}>✕</button>
+        </div>
+
+        <div className="flex-between m-b-24" style={{ gap: '8px' }}>
+          <div className="glass p-12 text-center" style={{ flex: 1 }}>
+            <div className="text-tiny text-muted">ACERTADAS</div>
+            <div className="heading heading-medium" style={{ color: 'var(--neon-green)' }}>{totalExact}</div>
+            <div className="text-tiny text-muted">Bazas ok</div>
+          </div>
+          <div className="glass p-12 text-center" style={{ flex: 1 }}>
+            <div className="text-tiny text-muted">FALLADAS</div>
+            <div className="heading heading-medium" style={{ color: 'var(--neon-orange)' }}>{totalFailed}</div>
+            <div className="text-tiny text-muted">Bazas erradas</div>
+          </div>
+          <div className="glass p-12 text-center" style={{ flex: 1 }}>
+            <div className="text-tiny text-muted">PODIOS</div>
+            <div className="heading heading-medium" style={{ color: '#ffd700' }}>{totalPodiums}</div>
+            <div className="text-tiny text-muted">Top 3</div>
+          </div>
+        </div>
+
+        <div className="text-xs heading text-muted m-b-16" style={{ letterSpacing: '1px' }}>
+          HISTORIAL FECHA POR FECHA ({history.length} PARTIDAS)
+        </div>
+
+        <div className="flex-column" style={{ gap: '10px' }}>
+          {history.length === 0 ? (
+            <div className="text-center text-muted p-16 text-small">Sin partidas registradas para este jugador.</div>
+          ) : (
+            history.map(({ match, result, exact, failed }) => {
+              const dateStr = new Date(match.played_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+              const isWinner = result.position_in_match === 1;
+              const pts = Math.round((result.earned_championship_points || 0) + (result.osadia_points || 0));
+
+              return (
+                <div key={result.id} className="glass p-16 flex-between" style={{
+                  borderRadius: '14px', borderLeft: `4px solid ${isWinner ? 'var(--neon-orange)' : 'var(--glass-border)'}`
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="heading" style={{ color: isWinner ? 'var(--neon-orange)' : 'white' }}>{result.position_in_match}º</span>
+                      <span className="heading text-small">{dateStr}</span>
+                      <span className="badge badge-green">{pts} Pts</span>
+                    </div>
+                    <div className="text-tiny text-muted" style={{ marginTop: '4px', display: 'flex', gap: '12px' }}>
+                      <span style={{ color: 'var(--neon-green)' }}>🎯 {exact} acertadas</span>
+                      <span style={{ color: 'var(--neon-orange)' }}>❌ {failed} falladas</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="heading text-small" style={{ color: 'var(--neon-green)' }}>{Math.round(result.accuracy_percent)}%</div>
+                    <div className="text-tiny text-muted">{exact}/{result.total_match_rounds} rondas</div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── TAB DE RANKING ──────────────────────────────────────────────────
-function RankingTab({ members, group }: { members: GroupMember[], group: Group }) {
+function RankingTab({ members, group, onSelectMember }: { members: GroupMember[], group: Group, onSelectMember: (m: GroupMember) => void }) {
   const sortedByPoints = [...members].sort((a, b) => b.total_championship_points - a.total_championship_points);
   const sortedByEffectiveness = [...members]
     .filter(m => (m.total_matches_played / (group.match_count || 1)) >= (group.min_attendance_pct / 100))
@@ -177,15 +298,15 @@ function RankingTab({ members, group }: { members: GroupMember[], group: Group }
 
   return (
     <div className="flex-between" style={{ alignItems: 'flex-start', gap: '8px' }}>
-      <RankingColumn title="PTS" icon="🏆" color="var(--neon-cyan)" members={sortedByPoints} valueKey="total_championship_points" />
-      <RankingColumn title="EFECT" icon="🎯" color="var(--neon-green)" members={sortedByEffectiveness} valueKey="effective_avg_percent" isPercent />
-      <RankingColumn title="OSADÍA" icon="⚡" color="var(--neon-orange)" members={sortedByOsadia} valueKey="total_osadia_points" />
+      <RankingColumn title="PTS" icon="🏆" color="var(--neon-cyan)" members={sortedByPoints} valueKey="total_championship_points" onSelectMember={onSelectMember} />
+      <RankingColumn title="EFECT" icon="🎯" color="var(--neon-green)" members={sortedByEffectiveness} valueKey="effective_avg_percent" isPercent onSelectMember={onSelectMember} />
+      <RankingColumn title="OSADÍA" icon="⚡" color="var(--neon-orange)" members={sortedByOsadia} valueKey="total_osadia_points" onSelectMember={onSelectMember} />
     </div>
   );
 }
 
-function RankingColumn({ title, icon, color, members, valueKey, isPercent }: { 
-  title: string, icon: string, color: string, members: GroupMember[], valueKey: keyof GroupMember, isPercent?: boolean 
+function RankingColumn({ title, icon, color, members, valueKey, isPercent, onSelectMember }: { 
+  title: string, icon: string, color: string, members: GroupMember[], valueKey: keyof GroupMember, isPercent?: boolean, onSelectMember: (m: GroupMember) => void
 }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -194,7 +315,7 @@ function RankingColumn({ title, icon, color, members, valueKey, isPercent }: {
         <span className="heading text-xs" style={{ color }}>{title}</span>
       </div>
       {members.map((m: GroupMember, i: number) => (
-        <div key={m.id} className="flex-column flex-center m-b-8">
+        <div key={m.id} className="flex-column flex-center m-b-8" style={{ cursor: 'pointer' }} onClick={() => onSelectMember(m)}>
           <div className="text-tiny heading" style={{ color: i === 0 ? 'var(--neon-orange)' : 'white' }}>
             {getMemberDisplayName(m)}
           </div>
@@ -208,8 +329,8 @@ function RankingColumn({ title, icon, color, members, valueKey, isPercent }: {
 }
 
 // ── TAB DE PARTIDAS ─────────────────────────────────────────────────
-function MatchesSection({ matches, members, expandedMatch, setExpandedMatch, createdBy }: {
-  matches: Match[], members: GroupMember[], expandedMatch: string | null, setExpandedMatch: (id: string | null) => void, createdBy?: string
+function MatchesSection({ matches, members, expandedMatch, setExpandedMatch, createdBy, onSelectMember }: {
+  matches: Match[], members: GroupMember[], expandedMatch: string | null, setExpandedMatch: (id: string | null) => void, createdBy?: string, onSelectMember: (m: GroupMember) => void
 }) {
   if (matches.length === 0) {
     return <div className="p-24 text-center text-muted">No hay partidas registradas aún.</div>;
@@ -268,8 +389,10 @@ function MatchesSection({ matches, members, expandedMatch, setExpandedMatch, cre
                       const osaPts = Math.round(r.osadia_points || 0);
                       const accuracy = Math.round(r.accuracy_percent || 0);
 
+                      const memberObj = members.find(m => m.id === r.guest_member_id || (m.user_id && m.user_id === r.user_id));
+
                       return (
-                        <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: memberObj ? 'pointer' : 'default' }} onClick={() => memberObj && onSelectMember(memberObj)}>
                           <td style={{ padding: '8px 0' }}>
                             <span className="heading" style={{ color: isWinner ? 'var(--neon-orange)' : 'white', marginRight: '6px' }}>{r.position_in_match}º</span>
                             <span style={{ color: isWinner ? 'var(--neon-orange)' : 'white' }}>{name}</span>
@@ -291,10 +414,10 @@ function MatchesSection({ matches, members, expandedMatch, setExpandedMatch, cre
   );
 }
 
-// ── NUEVO: TAB DE ESTADÍSTICAS Y GRÁFICOS INTERACTIVOS ───────────────
+// ── TAB DE ESTADÍSTICAS Y GRÁFICOS INTERACTIVOS ───────────────
 const NEON_PALETTE = ['#00e5ff', '#ff6d00', '#00ff94', '#ff007f', '#ffd700', '#9d4edd', '#00f5d4', '#ff5722'];
 
-function StatisticsSection({ members, matches, createdBy }: { members: GroupMember[], matches: Match[], createdBy?: string }) {
+function StatisticsSection({ members, matches, createdBy, onSelectMember }: { members: GroupMember[], matches: Match[], createdBy?: string, onSelectMember: (m: GroupMember) => void }) {
   const [metric, setMetric] = useState<'points' | 'ranking'>('points');
   const [hiddenIds, setHiddenIds] = useState<string[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<{ name: string; val: string; x: number; y: number } | null>(null);
@@ -447,6 +570,7 @@ function StatisticsSection({ members, matches, createdBy }: { members: GroupMemb
                   <circle
                     key={i} cx={p.x} cy={p.y} r="3.5" fill={color} stroke="var(--surface)" strokeWidth="1.5"
                     style={{ cursor: 'pointer' }}
+                    onClick={() => onSelectMember(m)}
                     onMouseEnter={() => setHoveredPoint({ name: getMemberDisplayName(m), val: metric === 'points' ? `${p.val} pts` : `Puesto #${p.val}`, x: p.x, y: p.y })}
                     onMouseLeave={() => setHoveredPoint(null)}
                   />
@@ -477,7 +601,7 @@ function StatisticsSection({ members, matches, createdBy }: { members: GroupMemb
           return (
             <div
               key={m.id}
-              onClick={() => toggleHide(m.id)}
+              onClick={() => onSelectMember(m)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '4px 10px', borderRadius: '12px', cursor: 'pointer',
@@ -496,13 +620,13 @@ function StatisticsSection({ members, matches, createdBy }: { members: GroupMemb
       </div>
 
       {/* ── DATOS CURIOSOS & TRIVIA ──────────────────────────────────── */}
-      <TriviaSection members={activeMembers} matches={sortedMatches} />
+      <TriviaSection members={activeMembers} matches={sortedMatches} onSelectMember={onSelectMember} />
     </div>
   );
 }
 
 // ── SECCIÓN DE TRIVIA Y DATOS CURIOSOS CON NOMBRES REALES ───────────
-function TriviaSection({ members, matches }: { members: GroupMember[], matches: Match[] }) {
+function TriviaSection({ members, matches, onSelectMember }: { members: GroupMember[], matches: Match[], onSelectMember: (m: GroupMember) => void }) {
   const memberMap: Record<string, GroupMember> = {};
   members.forEach(m => {
     if (m.user_id) memberMap[m.user_id] = m;
@@ -525,14 +649,14 @@ function TriviaSection({ members, matches }: { members: GroupMember[], matches: 
   const podiumKings = members.filter(m => podiumCounts[m.id] === maxPodiums && maxPodiums > 0);
 
   // 2. EL FRANCOTIRADOR (100% efectividad)
-  let bestSniper: { name: string; rounds: number } | null = null;
+  let bestSniper: { member: GroupMember; rounds: number } | null = null;
   for (const m of matches) {
     for (const r of m.results || []) {
       if ((r.accuracy_percent || 0) >= 99.9) {
         const target = (r.user_id ? memberMap[r.user_id] : null) || (r.guest_member_id ? memberMap[r.guest_member_id] : null);
         if (target) {
           if (!bestSniper || r.total_match_rounds > bestSniper.rounds) {
-            bestSniper = { name: getMemberDisplayName(target), rounds: r.total_match_rounds };
+            bestSniper = { member: target, rounds: r.total_match_rounds };
           }
         }
       }
@@ -613,6 +737,7 @@ function TriviaSection({ members, matches }: { members: GroupMember[], matches: 
           subtitle="Más apariciones en el Top 3 de las partidas"
           highlight={`${maxPodiums} podios`}
           color="var(--neon-orange)"
+          onClick={() => onSelectMember(podiumKings[0])}
         />
       )}
 
@@ -620,10 +745,11 @@ function TriviaSection({ members, matches }: { members: GroupMember[], matches: 
         <TriviaCard
           icon="🎯"
           title="EL FRANCOTIRADOR"
-          names={bestSniper.name}
+          names={getMemberDisplayName(bestSniper.member)}
           subtitle={`100% efectividad exacta en partida de ${bestSniper.rounds} rondas`}
           highlight="100% acierto"
           color="var(--neon-cyan)"
+          onClick={() => onSelectMember(bestSniper!.member)}
         />
       )}
 
@@ -635,6 +761,7 @@ function TriviaSection({ members, matches }: { members: GroupMember[], matches: 
           subtitle="Máximo puntaje acumulado apostando y arriesgando bazas"
           highlight={`${Math.round(topOsadia.total_osadia_points)} pts`}
           color="var(--neon-green)"
+          onClick={() => onSelectMember(topOsadia)}
         />
       )}
 
@@ -646,6 +773,7 @@ function TriviaSection({ members, matches }: { members: GroupMember[], matches: 
           subtitle="Promedio de puesto más sólido a lo largo de las fechas disputadas"
           highlight={`Puesto #${minAvgPos.toFixed(1)}`}
           color="#00f5d4"
+          onClick={() => onSelectMember(regularPlayer!)}
         />
       )}
 
@@ -657,6 +785,7 @@ function TriviaSection({ members, matches }: { members: GroupMember[], matches: 
           subtitle="Jugador que más veces terminó en la última posición de una partida"
           highlight={`${maxLast} veces último`}
           color="#ff3366"
+          onClick={() => onSelectMember(worstPlayers[0])}
         />
       )}
 
@@ -668,17 +797,18 @@ function TriviaSection({ members, matches }: { members: GroupMember[], matches: 
           subtitle="Jugadores con más apariciones en los últimos 3 puestos"
           highlight={`${maxBottom3} veces en el fondo`}
           color="#ff9900"
+          onClick={() => onSelectMember(bottom3Players[0])}
         />
       )}
     </div>
   );
 }
 
-function TriviaCard({ icon, title, names, subtitle, highlight, color }: {
-  icon: string; title: string; names: string; subtitle: string; highlight: string; color: string;
+function TriviaCard({ icon, title, names, subtitle, highlight, color, onClick }: {
+  icon: string; title: string; names: string; subtitle: string; highlight: string; color: string; onClick?: () => void;
 }) {
   return (
-    <div className="glass m-b-16 p-24 flex-between" style={{ borderLeft: `4px solid ${color}`, borderRadius: '16px' }}>
+    <div className="glass m-b-16 p-24 flex-between" style={{ borderLeft: `4px solid ${color}`, borderRadius: '16px', cursor: onClick ? 'pointer' : 'default' }} onClick={onClick}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <span style={{ fontSize: '28px' }}>{icon}</span>
         <div>
@@ -695,7 +825,7 @@ function TriviaCard({ icon, title, names, subtitle, highlight, color }: {
 }
 
 // ── TAB SALÓN DE LA FAMA ────────────────────────────────────────────
-function HallOfFameSection({ members }: { members: GroupMember[] }) {
+function HallOfFameSection({ members, onSelectMember }: { members: GroupMember[], onSelectMember: (m: GroupMember) => void }) {
   const maxPlayed = Math.max(...members.map(m => m.total_matches_played), 0);
   const mostPlayed = members.filter(m => m.total_matches_played === maxPlayed && maxPlayed > 0);
 
@@ -707,19 +837,19 @@ function HallOfFameSection({ members }: { members: GroupMember[] }) {
 
   return (
     <div className="flex-column">
-      <HofTile title="ASISTENCIA PERFECTA" winners={mostPlayed} stat={`${maxPlayed} partidas`} color="var(--neon-cyan)" />
-      <HofTile title="EL CHARLATÁN" winners={mostReckless} stat={`${maxFailed} fallidas`} color="var(--neon-orange)" />
-      <HofTile title="EL CHAMULLERO" winners={mostChamullero} stat={`${maxChamullero} bazas`} color="#90a4ae" />
+      <HofTile title="ASISTENCIA PERFECTA" winners={mostPlayed} stat={`${maxPlayed} partidas`} color="var(--neon-cyan)" onSelectMember={onSelectMember} />
+      <HofTile title="EL CHARLATÁN" winners={mostReckless} stat={`${maxFailed} fallidas`} color="var(--neon-orange)" onSelectMember={onSelectMember} />
+      <HofTile title="EL CHAMULLERO" winners={mostChamullero} stat={`${maxChamullero} bazas`} color="#90a4ae" onSelectMember={onSelectMember} />
     </div>
   );
 }
 
-function HofTile({ title, winners, stat, color }: { title: string, winners: GroupMember[], stat: string, color: string }) {
+function HofTile({ title, winners, stat, color, onSelectMember }: { title: string, winners: GroupMember[], stat: string, color: string, onSelectMember: (m: GroupMember) => void }) {
   if (winners.length === 0) return null;
   const names = winners.map(getMemberDisplayName).join(', ');
 
   return (
-    <div className="glass card m-b-16" style={{ borderLeft: `4px solid ${color}` }}>
+    <div className="glass card m-b-16" style={{ borderLeft: `4px solid ${color}`, cursor: 'pointer' }} onClick={() => onSelectMember(winners[0])}>
       <div className="text-xs heading m-b-8" style={{ color, letterSpacing: '1px' }}>{title}</div>
       <div className="heading heading-medium m-b-8">{names}</div>
       <div className="text-secondary text-tiny">{stat}</div>

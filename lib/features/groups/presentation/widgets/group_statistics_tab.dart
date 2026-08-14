@@ -14,6 +14,7 @@ import 'package:bazas/features/matches/data/repositories/matches_repository.dart
 import 'points_evolution_chart.dart';
 import 'podium_distribution_chart.dart';
 import 'player_trivia_cards.dart';
+import 'player_history_sheet.dart';
 
 class GroupStatisticsTab extends ConsumerWidget {
   const GroupStatisticsTab({
@@ -182,6 +183,7 @@ class _GroupStatisticsContentState extends ConsumerState<_GroupStatisticsContent
               matches: widget.matches,
               matchResultsMap: _matchResultsMap,
               currentUserId: widget.currentUserId,
+              onPlayerTap: _openPlayerHistory,
             ),
 
             const SizedBox(height: 32),
@@ -201,6 +203,7 @@ class _GroupStatisticsContentState extends ConsumerState<_GroupStatisticsContent
               matches: widget.matches,
               matchResultsMap: _matchResultsMap,
               currentUserId: widget.currentUserId,
+              onPlayerTap: _openPlayerHistory,
             ),
           ],
         ),
@@ -213,6 +216,15 @@ class _GroupStatisticsContentState extends ConsumerState<_GroupStatisticsContent
     final sorted = List<GroupMemberModel>.from(members)
       ..sort((a, b) => b.totalWins.compareTo(a.totalWins));
     return sorted.first.totalWins > 0 ? sorted.first : null;
+  }
+
+  void _openPlayerHistory(GroupMemberModel member) {
+    PlayerHistorySheet.show(
+      context,
+      member: member,
+      matches: widget.matches,
+      matchResultsMap: _matchResultsMap,
+    );
   }
 }
 

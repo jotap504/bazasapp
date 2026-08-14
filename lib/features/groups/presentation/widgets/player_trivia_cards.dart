@@ -15,12 +15,14 @@ class PlayerTriviaCards extends StatelessWidget {
     required this.matches,
     required this.matchResultsMap,
     this.currentUserId,
+    this.onPlayerTap,
   });
 
   final List<GroupMemberModel> members;
   final List<MatchModel> matches;
   final Map<String, List<MatchResultModel>> matchResultsMap;
   final String? currentUserId;
+  final void Function(GroupMemberModel)? onPlayerTap;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +33,7 @@ class PlayerTriviaCards extends StatelessWidget {
       return const SizedBox();
     }
 
-    final triviaList = _calculateTriviaList(activeMembers, matches, matchResultsMap);
+    final triviaList = _calculateTriviaList(activeMembers, matches, matchResultsMap, onPlayerTap);
 
     if (triviaList.isEmpty) return const SizedBox();
 
@@ -65,7 +67,7 @@ class PlayerTriviaCards extends StatelessWidget {
           itemCount: triviaList.length,
           itemBuilder: (context, index) {
             final trivia = triviaList[index];
-            return _TriviaTile(trivia: trivia)
+            return _TriviaTile(trivia: trivia, onTap: trivia.onTap)
                 .animate()
                 .fadeIn(duration: 400.ms, delay: (index * 60).ms)
                 .slideX(begin: 0.05, end: 0);
@@ -79,6 +81,7 @@ class PlayerTriviaCards extends StatelessWidget {
     List<GroupMemberModel> activeMembers,
     List<MatchModel> matches,
     Map<String, List<MatchResultModel>> matchResultsMap,
+    void Function(GroupMemberModel)? onPlayerTap,
   ) {
     final List<_TriviaData> list = [];
 
@@ -112,6 +115,7 @@ class PlayerTriviaCards extends StatelessWidget {
           highlightValue: '$maxP podios',
           icon: HugeIcons.strokeRoundedChampion,
           color: const Color(0xFFFFD700), // Gold
+          onTap: onPlayerTap != null ? () => onPlayerTap(winners.first) : null,
         ));
       }
     }
@@ -134,13 +138,15 @@ class PlayerTriviaCards extends StatelessWidget {
       }
     }
     if (bestSniperPlayer != null && bestSinglePerf != null) {
+      final sniperRef = bestSniperPlayer!;
       list.add(_TriviaData(
         title: 'EL FRANCOTIRADOR',
         subtitle: '100% de efectividad exacta en una partida de ${bestSinglePerf.totalMatchRounds} rondas',
-        players: [bestSniperPlayer.displayName],
+        players: [sniperRef.displayName],
         highlightValue: '100% acierto',
         icon: HugeIcons.strokeRoundedTarget02,
         color: AppColors.neonCyan,
+        onTap: onPlayerTap != null ? () => onPlayerTap(sniperRef) : null,
       ));
     }
 
@@ -157,6 +163,7 @@ class PlayerTriviaCards extends StatelessWidget {
           highlightValue: '${topOsadia.totalOsadiaPoints.toInt()} pts osadía',
           icon: HugeIcons.strokeRoundedZap,
           color: AppColors.neonOrange,
+          onTap: onPlayerTap != null ? () => onPlayerTap(topOsadia) : null,
         ));
       }
     }
@@ -346,6 +353,7 @@ class _TriviaData {
     required this.highlightValue,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   final String title;
@@ -354,85 +362,100 @@ class _TriviaData {
   final String highlightValue;
   final dynamic icon;
   final Color color;
+  final VoidCallback? onTap;
 }
 
 class _TriviaTile extends StatelessWidget {
-  const _TriviaTile({required this.trivia});
+  const _TriviaTile({required this.trivia, this.onTap});
   final _TriviaData trivia;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final namesStr = trivia.players.join(', ');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: trivia.color.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: trivia.color.withOpacity(0.25)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: trivia.color.withOpacity(0.12),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: trivia.color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: trivia.color.withOpacity(0.25)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: trivia.color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: HugeIcon(icon: trivia.icon, color: trivia.color, size: 24),
             ),
-            child: HugeIcon(icon: trivia.icon, color: trivia.color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  trivia.title,
-                  style: AppTextStyles.rajdhani(
-                    color: trivia.color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    letterSpacing: 1.0,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    trivia.title,
+                    style: AppTextStyles.rajdhani(
+                      color: trivia.color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      letterSpacing: 1.0,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  namesStr,
-                  style: AppTextStyles.inter(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                  const SizedBox(height: 2),
+                  Text(
+                    namesStr,
+                    style: AppTextStyles.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  trivia.subtitle,
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: trivia.color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: trivia.color.withOpacity(0.4)),
-            ),
-            child: Text(
-              trivia.highlightValue,
-              style: TextStyle(
-                color: trivia.color,
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
+                  const SizedBox(height: 2),
+                  Text(
+                    trivia.subtitle,
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: trivia.color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: trivia.color.withOpacity(0.4)),
+                  ),
+                  child: Text(
+                    trivia.highlightValue,
+                    style: TextStyle(
+                      color: trivia.color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                if (onTap != null)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Text('👆 Ver ficha', style: TextStyle(fontSize: 9, color: AppColors.textMuted)),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

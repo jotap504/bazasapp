@@ -16,6 +16,7 @@ class PointsEvolutionChart extends StatefulWidget {
     required this.matches,
     required this.matchResultsMap,
     this.currentUserId,
+    this.onPlayerTap,
   });
 
   final List<GroupMemberModel> members;
@@ -24,6 +25,7 @@ class PointsEvolutionChart extends StatefulWidget {
   /// Mapa de match_id -> lista de MatchResultModel
   final Map<String, List<MatchResultModel>> matchResultsMap;
   final String? currentUserId;
+  final void Function(GroupMemberModel)? onPlayerTap;
 
   @override
   State<PointsEvolutionChart> createState() => _PointsEvolutionChartState();
@@ -158,6 +160,7 @@ class _PointsEvolutionChartState extends State<PointsEvolutionChart> {
                   }
                 });
               },
+              onLongPress: () => widget.onPlayerTap?.call(member),
               borderRadius: BorderRadius.circular(12),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
