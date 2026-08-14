@@ -18,6 +18,7 @@ import 'package:bazas/features/matches/data/repositories/matches_repository.dart
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:bazas/features/scan/presentation/controllers/scan_controller.dart';
+import 'package:bazas/features/groups/presentation/widgets/group_statistics_tab.dart';
 
 class GroupDashboardScreen extends ConsumerWidget {
   const GroupDashboardScreen({super.key, required this.groupId});
@@ -30,7 +31,7 @@ class GroupDashboardScreen extends ConsumerWidget {
     final group = groupAsync.maybeWhen(data: (g) => g, orElse: () => null);
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: groupAsync.when(
@@ -83,6 +84,7 @@ class GroupDashboardScreen extends ConsumerWidget {
             tabs: const [
               Tab(text: 'RANKING'),
               Tab(text: 'PARTIDAS'),
+              Tab(text: 'ESTADÍSTICAS'),
             ],
           ),
         ),
@@ -218,6 +220,9 @@ class GroupDashboardScreen extends ConsumerWidget {
 
               // PANEL 2: PARTIDAS
               _MatchHistorySection(groupId: groupId, group: group),
+
+              // PANEL 3: ESTADÍSTICAS
+              GroupStatisticsTab(groupId: groupId, group: group),
             ],
           ),
         ),

@@ -43,6 +43,32 @@ extension GroupMemberModelX on GroupMemberModel {
     return previousPosition! - currentPosition!;
   }
 
+  /// Nombre amigable para mostrar en UI (apodo o nombre real, nunca UUIDs)
+  String get displayName {
+    if (guestNickname != null && guestNickname!.trim().isNotEmpty) {
+      return guestNickname!.trim();
+    }
+    if (guestFullName != null && guestFullName!.trim().isNotEmpty) {
+      return guestFullName!.trim();
+    }
+    if (profile?.nickname != null && profile!.nickname!.trim().isNotEmpty) {
+      return profile!.nickname!.trim();
+    }
+    if (profile?.displayName != null && profile!.displayName.trim().isNotEmpty) {
+      return profile!.displayName.trim();
+    }
+    return 'Jugador';
+  }
+
+  /// Primer nombre o apodo corto para leyendas de gráficos y badges
+  String get shortName {
+    final name = displayName;
+    if (name.contains(' ')) {
+      return name.split(' ').first;
+    }
+    return name;
+  }
+
   bool get isOwner => role == 'owner';
   bool get isAdmin => role == 'owner' || role == 'admin';
 }
